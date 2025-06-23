@@ -18,7 +18,9 @@ jobs:
           node-version: 18
 
       - name: 📦 Install dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install localtunnel
 
       - name: 🛠️ Build project
         run: npm run build
@@ -34,4 +36,3 @@ jobs:
           sleep 10
           echo "LocalTunnel preview link:"
           cat lt.log | grep -o 'https://.*'
-
