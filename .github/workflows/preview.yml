@@ -25,12 +25,20 @@ jobs:
       - name: 🛠️ Build project
         run: npm run build
 
-      - name: 🚀 Start server (background)
+      - name: 🚀 Start server in background
         run: |
           nohup npm start > server.log 2>&1 &
-          sleep 10
 
-      - name: Open LocalTunnel
+      - name: ⏳ Wait for server to be ready
+        run: |
+          for i in {1..10}; do
+            echo "⏳ Checking if server is up..."
+            nc -z localhost 3000 && echo "✅ Server is up!" && exit 0
+            sleep 2
+          done
+          echo "❌ Server did not start in time" && cat server.log && exit 1
+
+      - name: 🌍 Open LocalTunnel
         run: |
           npx localtunnel --port 3000 > lt.log &
           sleep 10
