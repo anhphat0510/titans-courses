@@ -25,9 +25,9 @@ jobs:
       - name: 🛠️ Build project
         run: npm run build
 
-      - name: 🚀 Start server in background
+      - name: 🚀 Start dev server in background (port 3000)
         run: |
-          nohup npm start > server.log 2>&1 &
+          nohup npm run dev > server.log 2>&1 &
 
       - name: ⏳ Wait for server to be ready
         run: |
