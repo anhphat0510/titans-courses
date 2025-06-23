@@ -2,14 +2,14 @@ name: Preview Deploy (LocalTunnel)
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   preview:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Clone code
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
 
       - name: 🟢 Setup Node.js
@@ -18,29 +18,16 @@ jobs:
           node-version: 18
 
       - name: 📦 Install dependencies
-        run: |
-          npm install
-          npm install localtunnel
+        run: npm install
 
-      - name: 🛠️ Build project
-        run: npm run build
-
-      - name: 🚀 Start dev server in background (port 3000)
-        run: |
-          nohup npm run dev > server.log 2>&1 &
+      - name: 🚀 Start dev server
+        run: nohup npm run dev > server.log 2>&1 &
 
       - name: ⏳ Wait for server to be ready
-        run: |
-          for i in {1..10}; do
-            echo "⏳ Checking if server is up..."
-            nc -z localhost 3000 && echo "✅ Server is up!" && exit 0
-            sleep 2
-          done
-          echo "❌ Server did not start in time" && cat server.log && exit 1
+        run: npx wait-on http://localhost:3000
 
       - name: 🌍 Open LocalTunnel
         run: |
           npx localtunnel --port 3000 > lt.log &
-          sleep 10
-          echo "LocalTunnel preview link:"
-          cat lt.log | grep -o 'https://.*'
+          sleep 5
+          cat lt.log
