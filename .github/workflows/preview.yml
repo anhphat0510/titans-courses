@@ -30,7 +30,7 @@ jobs:
           nohup npm start > server.log 2>&1 &
           sleep 10
 
-      - name: 🌍 Open LocalTunnel
+      - name: Open LocalTunnel
         run: |
           npx localtunnel --port 3000 > lt.log &
           sleep 10
