@@ -31,6 +31,7 @@ jobs:
       - name: 🌍 Open LocalTunnel
         run: |
           npx localtunnel --port 3000 > lt.log &
-          sleep 5
-          cat lt.log
+          sleep 10
+          echo "LocalTunnel preview link:"
+          cat lt.log | grep -o 'https://.*'
 
