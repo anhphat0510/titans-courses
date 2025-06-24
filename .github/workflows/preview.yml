@@ -2,21 +2,21 @@ name: 🚀 Preview Deploy (LocalTunnel)
 
 on:
   push:
-    branches: [main]
+    branches: [main] # hoặc đổi nhánh tùy bro
 
 jobs:
   preview:
     runs-on: ubuntu-latest
 
     env:
-      PREVIEW_PORT: 3000
+      PORT: 3000
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
@@ -25,30 +25,41 @@ jobs:
 
       - name: 🚀 Start dev server
         run: |
+          echo "🛠️ Starting dev server on port $PORT..."
           nohup npm run dev > server.log 2>&1 &
 
       - name: ⏳ Wait for server to be ready
-        run: npx wait-on http://localhost:${{ env.PREVIEW_PORT }}
+        run: npx wait-on http://localhost:$PORT
 
-      - name: 🌍 Open LocalTunnel
+      - name: 🌍 Open LocalTunnel & Extract URL
         run: |
-          npx localtunnel --port ${{ env.PREVIEW_PORT }} --print-requests > lt.log &
+          echo "🌐 Opening LocalTunnel..."
+          npx localtunnel --port $PORT --print-requests > lt.log &
           sleep 8
-          echo "PREVIEW_URL=$(grep -o 'https://[^ ]*\.loca\.lt' lt.log | head -n 1)" >> $GITHUB_ENV
+
+          echo "📄 Extracting tunnel URL..."
+          TUNNEL_URL=$(grep -o 'https://[^ ]*\.loca\.lt' lt.log | head -n 1)
+          echo "🔗 Tunnel URL: $TUNNEL_URL"
+          echo "TUNNEL_URL=$TUNNEL_URL" >> $GITHUB_ENV
 
       - name: 📤 Send Preview Link to Webhook
-        if: env.PREVIEW_URL != ''
+        if: env.TUNNEL_URL != ''
         env:
           WEBHOOK_URL: ${{ secrets.PREVIEW_WEBHOOK }}
         run: |
+          echo "📡 Sending link to webhook..."
           curl -X POST -H "Content-Type: application/json" \
-          -d "{\"content\": \"✅ Preview ready: $PREVIEW_URL\"}" \
+          -d "{\"content\": \"✅ **Preview is live!**\n🔗 $TUNNEL_URL\"}" \
           $WEBHOOK_URL
 
-      - name: 📦 Upload logs
-        uses: actions/upload-artifact@v3
+      - name: 🧾 Save logs
+        run: |
+          mkdir -p preview-logs
+          cp server.log preview-logs/server.log || echo "⚠️ server.log missing"
+          cp lt.log preview-logs/lt.log || echo "⚠️ lt.log missing"
+
+      - name: 📦 Upload logs as artifact
+        uses: actions/upload-artifact@v4
         with:
           name: preview-logs
-          path: |
-            server.log
-            lt.log
+          path: preview-logs
