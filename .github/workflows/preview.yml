@@ -1,4 +1,4 @@
-name: Preview Deploy (LocalTunnel)
+name: 🚀 Preview Deploy (LocalTunnel)
 
 on:
   push:
@@ -21,13 +21,42 @@ jobs:
         run: npm install
 
       - name: 🚀 Start dev server
-        run: nohup npm run dev > server.log 2>&1 &
+        run: |
+          echo "🛠️ Starting dev server on port 3000..."
+          nohup npm run dev > server.log 2>&1 &
 
       - name: ⏳ Wait for server to be ready
         run: npx wait-on http://localhost:3000
 
       - name: 🌍 Open LocalTunnel
+        id: localtunnel
         run: |
-          npx localtunnel --port 3000 > lt.log &
+          echo "🌐 Opening LocalTunnel..."
+          npx localtunnel --port 3000 --print-requests > lt.log &
           sleep 5
-          cat lt.log
+          echo "📄 Extracting URL..."
+          PREVIEW_URL=$(grep -o 'https://[^ ]*\.loca\.lt' lt.log | head -n 1)
+          echo "Preview URL: $PREVIEW_URL"
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: 📤 Send Preview Link to Webhook
+        if: ${{ steps.localtunnel.outputs.preview_url != '' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.PREVIEW_WEBHOOK }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{\"content\": \"✅ **Preview is live!**\n🔗 ${{ steps.localtunnel.outputs.preview_url }}\"}" \
+          $WEBHOOK_URL
+
+      - name: 🧾 Save logs
+        run: |
+          echo "🧾 Saving logs..."
+          mkdir -p preview-logs
+          cp server.log preview-logs/server.log
+          cp lt.log preview-logs/lt.log
+
+      - name: 📦 Upload Logs Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: preview-logs
+          path: preview-logs
